@@ -1,5 +1,6 @@
 ﻿Imports System.ComponentModel
 Imports Ionic.VArchive
+Imports Microsoft.Win32
 
 Public Class MyMainMenu
 
@@ -173,14 +174,26 @@ Public Class MyMainMenu
             If (BWorker_Extraction.IsBusy()) Then
                 MessageBox.Show("Explorer currently extracting file(s)...", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Else
-                Using theFolderBrowse As New FolderBrowserDialog()
-                    theFolderBrowse.Description = "Select location where to be extracted"
-                    theFolderBrowse.ShowNewFolderButton = True
-                    theFolderBrowse.RootFolder = Environment.SpecialFolder.Desktop
-                    If (theFolderBrowse.ShowDialog(Me) = DialogResult.OK) Then
-                        StartExtraction(True, theFolderBrowse.SelectedPath())
-                    End If
-                End Using
+                Dim something As New Leayal.Forms.FolderSelectDialog()
+                something.Title = "Select location where to be extracted"
+                'something.FileName = ""
+                Dim result As String = DirectCast(Registry.GetValue(IO.Path.Combine(Registry.CurrentUser.Name, "SOFTWARE", "Leayal", "VDataExplorer"), "LastExtractDirectory", String.Empty), String)
+                If (Not String.IsNullOrWhiteSpace(result) AndAlso IO.Directory.Exists(result)) Then
+                    something.InitialDirectory = result
+                End If
+                If (something.ShowDialog(Me.Handle)) Then
+                    Registry.SetValue(IO.Path.Combine(Registry.CurrentUser.Name, "SOFTWARE", "Leayal", "VDataExplorer"), "LastExtractDirectory", something.FileName)
+                    StartExtraction(True, something.FileName)
+                End If
+
+                'Using theFolderBrowse As New FolderBrowserDialog()
+                '    theFolderBrowse.Description = "Select location where to be extracted"
+                '    theFolderBrowse.ShowNewFolderButton = True
+                '    theFolderBrowse.RootFolder = Environment.SpecialFolder.Desktop
+                '    If (theFolderBrowse.ShowDialog(Me) = DialogResult.OK) Then
+                '        StartExtraction(True, theFolderBrowse.SelectedPath())
+                '    End If
+                'End Using
             End If
         End If
     End Sub
