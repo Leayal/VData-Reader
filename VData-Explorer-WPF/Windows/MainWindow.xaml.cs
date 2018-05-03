@@ -34,7 +34,8 @@ namespace VData_Explorer.Windows
         private VFile archive;
         private CancellationTokenSource isWorking;
         private TreeItemsList viewer;
-        
+        private string currentfullpath;
+
         public MainWindow()
         {
             this.archive = null;
@@ -87,7 +88,6 @@ namespace VData_Explorer.Windows
                     if (!string.IsNullOrWhiteSpace(files[0]) && File.Exists(files[0]))
                         await this.OpenArchive(files[0]);
                 }
-                await this.OpenArchive(files[0]);
             }
         }
 
@@ -111,7 +111,6 @@ namespace VData_Explorer.Windows
 
         public async Task OpenArchive(string filepath)
         {
-            await this.CloseArchive();
             if (string.IsNullOrEmpty(filepath))
             {
                 OpenFileDialog ofd = new OpenFileDialog();
@@ -132,7 +131,16 @@ namespace VData_Explorer.Windows
                 else
                     return;
             }
-            
+            else
+            {
+                filepath = Path.GetFullPath(filepath);
+            }
+
+            if (string.Equals(filepath, this.currentfullpath, StringComparison.OrdinalIgnoreCase)) return;
+            this.currentfullpath = filepath;
+
+            await this.CloseArchive();
+
             this.isWorking = null;
             this.tabLoading.IsSelected = true;
             FileStream fs = null;
@@ -158,7 +166,10 @@ namespace VData_Explorer.Windows
                     {
                         justabool = true;
                         var alwihgliawhg = new MetroDialogSettings() { DefaultText = "Password?" };
-                        string pw = await this.ShowInputAsync("Password", "The file has password-protected encryption.", alwihgliawhg);
+                        PasswordPromptDialog promptDialog = new PasswordPromptDialog(this, alwihgliawhg) { Description = "The file has password-protected encryption." };
+                        await this.ShowMetroDialogAsync(promptDialog, promptDialog.DialogSettings);
+                        await promptDialog.WaitUntilUnloadedAsync();
+                        string pw = promptDialog.Password; // await this.ShowInputAsync("Password", "The file has password-protected encryption.", alwihgliawhg);
                         while (justabool)
                         {
                             if (string.IsNullOrEmpty(pw))
@@ -176,6 +187,29 @@ namespace VData_Explorer.Windows
                                     {
                                         using (Stream entryStream = this.archive.GetEntryStream(testitem))
                                         {
+                                            string[] oldpw = Settings.UsedPassword;
+                                            if (oldpw == null || oldpw.Length == 0)
+                                            {
+                                                Settings.UsedPassword = new string[] { pw };
+                                            }
+                                            else
+                                            {
+                                                int foundindex = Array.IndexOf(oldpw, pw);
+                                                if (foundindex == -1)
+                                                {
+                                                    string[] newpw = new string[oldpw.Length + 1];
+                                                    newpw[0] = pw;
+                                                    Array.Copy(oldpw, 0, newpw, 1, oldpw.Length);
+                                                    Settings.UsedPassword = newpw;
+                                                }
+                                                else if (foundindex != 0)
+                                                {
+                                                    for (int i = foundindex; i > 0; i--)
+                                                        oldpw[i] = oldpw[i - 1];
+                                                    oldpw[0] = pw;
+                                                    Settings.UsedPassword = oldpw;
+                                                }
+                                            }
                                             justabool = false;
                                         }
                                     }
@@ -187,7 +221,10 @@ namespace VData_Explorer.Windows
                             }
                             if (justabool)
                             {
-                                pw = await this.ShowInputAsync("Password", "The password did not match.", alwihgliawhg);
+                                promptDialog.Description = "The password did not match.";
+                                await this.ShowMetroDialogAsync(promptDialog, promptDialog.DialogSettings);
+                                await promptDialog.WaitUntilUnloadedAsync();
+                                pw = promptDialog.Password; // await this.ShowInputAsync("Password", "The password did not match.", alwihgliawhg);
                             }
                         }
                         this.archive.LeaveBaseStreamOpen = false;

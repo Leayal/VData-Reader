@@ -12,7 +12,7 @@ namespace VData_Explorer
         {
             get
             {
-                using (var regKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Leayal\VDataExplorer"))
+                using (var regKey = Registry.CurrentUser.OpenSubKey(MyRegisteredHomeOrNot))
                 {
                     if (regKey == null)
                         return string.Empty;
@@ -21,7 +21,7 @@ namespace VData_Explorer
             }
             set
             {
-                using (var regKey = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Leayal\VDataExplorer"))
+                using (var regKey = Registry.CurrentUser.CreateSubKey(MyRegisteredHomeOrNot))
                 {
                     regKey.SetValue("LastExtractLocation", value, RegistryValueKind.String);
                 }
@@ -32,7 +32,7 @@ namespace VData_Explorer
         {
             get
             {
-                using (var regKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Leayal\VDataExplorer"))
+                using (var regKey = Registry.CurrentUser.OpenSubKey(MyRegisteredHomeOrNot))
                 {
                     if (regKey == null)
                         return string.Empty;
@@ -41,9 +41,37 @@ namespace VData_Explorer
             }
             set
             {
-                using (var regKey = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Leayal\VDataExplorer"))
+                using (var regKey = Registry.CurrentUser.CreateSubKey(MyRegisteredHomeOrNot))
                 {
                     regKey.SetValue("LastFileLocation", value, RegistryValueKind.String);
+                }
+            }
+        }
+
+        public static string[] UsedPassword
+        {
+            get
+            {
+                using (var regKey = Registry.CurrentUser.OpenSubKey(MyRegisteredHomeOrNot))
+                {
+                    if (regKey == null)
+                        return null;
+                    var sumthin = regKey.GetValue("UsedPassword");
+                    if (sumthin is string[] result)
+                    {
+                        return result;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+            set
+            {
+                using (var regKey = Registry.CurrentUser.CreateSubKey(MyRegisteredHomeOrNot))
+                {
+                    regKey.SetValue("UsedPassword", value, RegistryValueKind.MultiString);
                 }
             }
         }
