@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.1</TargetFramework>
+    <RootNamespace>Lamie.LibVData</RootNamespace>
+    <Authors>Lamie</Authors>
+    <Company />
+    <Product />
+    <Description>Provide interaction with SoulWorker data (*.v) files.</Description>
+    <PackageId>Lamie.LibVData</PackageId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard1.1\LibVData.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard1.1\LibVData.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="sharpcompress" Version="0.20.0" />
+  </ItemGroup>
+
+</Project>
