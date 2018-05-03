@@ -8,6 +8,7 @@ namespace VData_Explorer
 {
     public static class Settings
     {
+        const string MyRegisteredHomeOrNot = @"SOFTWARE\Leayal\VDataExplorer";
         public static string LastExtractLocation
         {
             get
