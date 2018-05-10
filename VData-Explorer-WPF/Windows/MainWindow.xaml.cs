@@ -239,12 +239,29 @@ namespace VData_Explorer.Windows
                         meh[0] = DirectoryRoot;
                         return meh;
                     });
-                    if (huh.Count > 0)
+
+                    bool huhNotEmpty = (huh.Count != 0);
+
+                    if (huhNotEmpty)
                         this.addressbar.ItemsSource = new ListCollectionView(huh);
                     this.Title = ThisWindowTitle + ": " + Path.GetFileName(filepath);
                     this.tabList.IsSelected = true;
                     this.addressbar.SelectedIndex = 0;
                     this.Addressbar_SelectionChanged(this.addressbar, new SelectionChangedEventArgs(ComboBox.SelectionChangedEvent, new string[0], new string[] { huh[0] }));
+
+                    if (huhNotEmpty)
+                    {
+                        await this.filelist.Dispatcher.BeginInvoke(new JustAction(() =>
+                        {
+                            this.filelist.UpdateLayout();
+                            var item = this.filelist.ItemContainerGenerator.ContainerFromIndex(0);
+                            if (item is ListBoxItem listboxitem)
+                            {
+                                listboxitem.IsSelected = true;
+                                listboxitem.Focus();
+                            }
+                        }), DispatcherPriority.Loaded, null);
+                    }
                 }
                 else
                 {
@@ -282,11 +299,23 @@ namespace VData_Explorer.Windows
                 this.ignoreSelection = true;
                 this.addressbar.SelectedItem = x.Fullname;
                 this.ignoreSelection = false;
-                this.colSize.Width = x.LongestSize;
-                this.colCompressedSize.Width = x.LongestCompressedSize;
+                if (x.Files.Count == 0)
+                {
+                    this.colSize.Visibility = Visibility.Collapsed;
+                    this.colCompressedSize.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    this.colSize.Width = x.LongestSize;
+                    this.colCompressedSize.Width = x.LongestCompressedSize;
+                    this.colSize.Visibility = Visibility.Visible;
+                    this.colCompressedSize.Visibility = Visibility.Visible;
+                }
                 this.filelist.ItemsSource = y;
                 if (y.Count > 0)
+                {
                     this.filelist.ScrollIntoView(y[0]);
+                }
             }), DispatcherPriority.Normal, sender, obj);
         }
 
@@ -414,7 +443,7 @@ namespace VData_Explorer.Windows
         private void Filelist_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             if (e.WidthChanged)
-                this.headercolumns.MaxWidth = (this.filelist.ActualWidth - 30);
+                this.headercolumns.MaxWidth = (this.filelist.ActualWidth - 28);
         }
 
         private void Addressbar_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -742,6 +771,18 @@ namespace VData_Explorer.Windows
             }
             if (this.archive != null)
                 this.tabList.IsSelected = true;
+        }
+
+        private void ListBoxItem_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!e.IsRepeat && e.Key == Key.Enter && this.filelist.SelectedItems.Count == 1)
+            {
+                ItemViewDirectory dir = this.filelist.SelectedItem as ItemViewDirectory;
+                if (dir != null)
+                {
+                    dir.DoubleClicked();
+                }
+            }
         }
     }
 }

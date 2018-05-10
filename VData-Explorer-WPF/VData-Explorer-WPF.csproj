@@ -77,9 +77,17 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Controls\ComboBoxAddress.xaml.cs">
+      <DependentUpon>ComboBoxAddress.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Helpers\IsNullConverter.cs" />
     <Compile Include="Windows\PasswordPromptDialog.xaml.cs">
       <DependentUpon>PasswordPromptDialog.xaml</DependentUpon>
     </Compile>
+    <Page Include="Controls\ComboBoxAddress.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Windows\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -108,6 +116,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="Windows\PasswordPromptDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\SharedDictionary.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

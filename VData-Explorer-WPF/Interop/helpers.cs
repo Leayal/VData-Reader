@@ -42,9 +42,14 @@ namespace VData_Explorer.Interop
         /// <summary>
         /// Get the required height and width of the specified text. Uses FormattedText
         /// </summary>
-        private static FormattedText MeasureTextSize(string text, Typeface typeface, FontFamily fontFamily, FontStyle fontStyle, FontWeight fontWeight, FontStretch fontStretch, double fontSize)
+        public static FormattedText MeasureTextSize(string text, Typeface typeface, FontFamily fontFamily, FontStyle fontStyle, FontWeight fontWeight, FontStretch fontStretch, double fontSize)
         {
             return new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, Brushes.Black);
+        }
+
+        public static FormattedText MeasureTextSize(string text, Typeface typeface, double fontSize)
+        {
+            return new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, fontSize, null);
         }
 
         /// <summary>

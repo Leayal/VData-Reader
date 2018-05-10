@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:VData_Explorer"
              xmlns:ex="clr-namespace:VData_Explorer.Classes"
+             xmlns:helpers="clr-namespace:VData_Explorer.Helpers"
              StartupUri="Windows/MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
@@ -14,6 +15,7 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/BaseDark.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <ex:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+            <helpers:IsNullConverter x:Key="nullconverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

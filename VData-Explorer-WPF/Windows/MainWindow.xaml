@@ -5,51 +5,32 @@
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                 xmlns:controls="clr-namespace:VData_Explorer.Controls"
                  xmlns:local="clr-namespace:VData_Explorer"
                  mc:Ignorable="d"
                  Title="{Binding ElementName=titleText,Path=Text,Mode=OneWayToSource}" Height="500" MinHeight="500" Width="600" MinWidth="600" WindowStartupLocation="CenterScreen" TitleCaps="False" ShowTitleBar="False">
     <mah:MetroWindow.Resources>
-        <ItemsPanelTemplate x:Key="addressvirtualcache">
-            <VirtualizingStackPanel/>
-        </ItemsPanelTemplate>
-        <RoutedUICommand x:Key="CmdOpen" Text="Open">
-            <RoutedUICommand.InputGestures>
-                <KeyGesture>Ctrl+O</KeyGesture>
-            </RoutedUICommand.InputGestures>
-        </RoutedUICommand>
-        <RoutedUICommand x:Key="CmdClose" Text="Close">
-            <RoutedUICommand.InputGestures>
-                <KeyGesture>Alt+X</KeyGesture>
-            </RoutedUICommand.InputGestures>
-        </RoutedUICommand>
-        <RoutedUICommand x:Key="CmdExit" Text="Exit">
-            <RoutedUICommand.InputGestures>
-                <KeyGesture>Alt+F4</KeyGesture>
-            </RoutedUICommand.InputGestures>
-        </RoutedUICommand>
-        <RoutedUICommand x:Key="CmdExtractSelected" Text="Extract Selected File(s)">
-            <RoutedUICommand.InputGestures>
-                <KeyGesture>Ctrl+E</KeyGesture>
-            </RoutedUICommand.InputGestures>
-        </RoutedUICommand>
-        <RoutedUICommand x:Key="CmdExtractAll" Text="Extract All Files">
-            <RoutedUICommand.InputGestures>
-                <KeyGesture>Ctrl+Shift+E</KeyGesture>
-            </RoutedUICommand.InputGestures>
-        </RoutedUICommand>
-        <ContextMenu x:Key="BoxContextMenu">
-            <MenuItem Header="Open" Click="MenuItemOpen_Click" />
-            <MenuItem Command="{StaticResource CmdExtractSelected}">
-                <MenuItem.Icon>
-                    <iconPacks:PackIconModern Kind="PageArrow" />
-                </MenuItem.Icon>
-            </MenuItem>
-            <MenuItem Command="{StaticResource CmdExtractAll}">
-                <MenuItem.Icon>
-                    <iconPacks:PackIconModern Kind="PageDuplicate" />
-                </MenuItem.Icon>
-            </MenuItem>
-        </ContextMenu>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="SharedDictionary.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <ItemsPanelTemplate x:Key="addressvirtualcache">
+                <VirtualizingStackPanel/>
+            </ItemsPanelTemplate>
+            <ContextMenu x:Key="BoxContextMenu">
+                <MenuItem Header="Open" Click="MenuItemOpen_Click" />
+                <MenuItem Command="{StaticResource CmdExtractSelected}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconModern Kind="PageArrow" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Command="{StaticResource CmdExtractAll}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconModern Kind="PageDuplicate" />
+                    </MenuItem.Icon>
+                </MenuItem>
+            </ContextMenu>
+        </ResourceDictionary>
     </mah:MetroWindow.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="{StaticResource CmdOpen}" Executed="OpenCmd_Executed"/>
@@ -140,16 +121,16 @@
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <Label Content="Address" />
-                    <ComboBox Grid.Column="1" x:Name="addressbar"
+                    <controls:ComboBoxAddress Grid.Column="1" x:Name="addressbar"
                               IsEditable="True" PreviewKeyDown="Addressbar_PreviewKeyDown" SelectionChanged="Addressbar_SelectionChanged"
-                              ItemsPanel="{StaticResource addressvirtualcache}" IsTextSearchEnabled="False">
-                    </ComboBox>
+                              IsTextSearchEnabled="False">
+                    </controls:ComboBoxAddress>
                     <Grid Grid.Row="1" Grid.ColumnSpan="2" x:Name="headercolumns">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20" />
                             <ColumnDefinition />
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="4" />
+                            <ColumnDefinition Width="5" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
@@ -174,7 +155,7 @@
                                         <ColumnDefinition Width="20" />
                                         <ColumnDefinition />
                                         <ColumnDefinition Width="{Binding ElementName=colSize,Path=ActualWidth,Mode=OneWay}" />
-                                        <ColumnDefinition Width="4" />
+                                        <ColumnDefinition Width="5" />
                                         <ColumnDefinition Width="{Binding ElementName=colCompressedSize,Path=ActualWidth,Mode=OneWay}" />
                                     </Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions>
@@ -192,6 +173,7 @@
                                 <Setter Property="ContextMenu" Value="{StaticResource BoxContextMenu}" />
                                 <EventSetter Event="ContextMenuOpening" Handler="ListBoxItem_ContextMenuOpening" />
                                 <EventSetter Event="PreviewMouseDoubleClick" Handler="ListItem_PreviewMouseDoubleClick" />
+                                <EventSetter Event="PreviewKeyDown" Handler="ListBoxItem_PreviewKeyDown" />
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 <Setter Property="VerticalContentAlignment" Value="Stretch" />
                                 <Setter Property="Margin" Value="0" />

@@ -1,0 +1,29 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:VData_Explorer.Windows">
+    <RoutedUICommand x:Key="CmdOpen" Text="Open">
+        <RoutedUICommand.InputGestures>
+            <KeyGesture>Ctrl+O</KeyGesture>
+        </RoutedUICommand.InputGestures>
+    </RoutedUICommand>
+    <RoutedUICommand x:Key="CmdClose" Text="Close">
+        <RoutedUICommand.InputGestures>
+            <KeyGesture>Alt+X</KeyGesture>
+        </RoutedUICommand.InputGestures>
+    </RoutedUICommand>
+    <RoutedUICommand x:Key="CmdExit" Text="Exit">
+        <RoutedUICommand.InputGestures>
+            <KeyGesture>Alt+F4</KeyGesture>
+        </RoutedUICommand.InputGestures>
+    </RoutedUICommand>
+    <RoutedUICommand x:Key="CmdExtractSelected" Text="Extract Selected File(s)">
+        <RoutedUICommand.InputGestures>
+            <KeyGesture>Ctrl+E</KeyGesture>
+        </RoutedUICommand.InputGestures>
+    </RoutedUICommand>
+    <RoutedUICommand x:Key="CmdExtractAll" Text="Extract All Files in this data file">
+        <RoutedUICommand.InputGestures>
+            <KeyGesture>Ctrl+Shift+E</KeyGesture>
+        </RoutedUICommand.InputGestures>
+    </RoutedUICommand>
+</ResourceDictionary>
