@@ -104,20 +104,6 @@ namespace VData_Explorer.Interop
         public delegate void JustActionOneArg(object obj);
         public delegate void JustProgress(int current, int total);
 
-        private static readonly char[] invalidfilenamechars = System.IO.Path.GetInvalidFileNameChars();
-        public static string ReplaceInvalidFilenameChars(string str, char newchar)
-        {
-            StringBuilder sb = new StringBuilder(str.Length);
-            for (int i = 0; i < str.Length; i++)
-            {
-                if (Array.IndexOf(invalidfilenamechars, str[i]) == -1)
-                    sb.Append(str[i]);
-                else
-                    sb.Append(newchar);
-            }
-            return sb.ToString();
-        }
-
         public static bool CanBeFullySeen(FrameworkElement container, FrameworkElement element)
         {
             if (!element.IsVisible)
@@ -156,6 +142,19 @@ namespace VData_Explorer.Interop
 
             Rect bounds = element.TransformToAncestor(container).TransformBounds(new Rect(0.0, 0.0, element.ActualWidth, element.ActualHeight));
             return viewport.IntersectsWith(bounds);
+        }
+
+        public static void ShowFolder(string path)
+        {
+            using (Process proc = new Process())
+            {
+                proc.StartInfo.FileName = "explorer.exe";
+                if (path.IndexOf(' ') == -1)
+                    proc.StartInfo.Arguments = string.Format("/select, {0}", path);
+                else
+                    proc.StartInfo.Arguments = string.Format("/select, \"{0}\"", path);
+                proc.Start();
+            }
         }
     }
 }

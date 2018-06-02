@@ -29,6 +29,26 @@ namespace VData_Explorer
             }
         }
 
+        public static string LastFileExtractLocation
+        {
+            get
+            {
+                using (var regKey = Registry.CurrentUser.OpenSubKey(MyRegisteredHomeOrNot))
+                {
+                    if (regKey == null)
+                        return string.Empty;
+                    return (string)regKey.GetValue("LastFileExtractLocation", string.Empty);
+                }
+            }
+            set
+            {
+                using (var regKey = Registry.CurrentUser.CreateSubKey(MyRegisteredHomeOrNot))
+                {
+                    regKey.SetValue("LastFileExtractLocation", value, RegistryValueKind.String);
+                }
+            }
+        }
+
         public static string LastFileLocation
         {
             get
@@ -45,6 +65,29 @@ namespace VData_Explorer
                 using (var regKey = Registry.CurrentUser.CreateSubKey(MyRegisteredHomeOrNot))
                 {
                     regKey.SetValue("LastFileLocation", value, RegistryValueKind.String);
+                }
+            }
+        }
+
+        public static bool EnableAutoCorrectPath
+        {
+            get
+            {
+                using (var regKey = Registry.CurrentUser.OpenSubKey(MyRegisteredHomeOrNot))
+                {
+                    if (regKey == null)
+                        return false;
+                    return ((int)regKey.GetValue("EnableAutoCorrectPath", 0) != 0);
+                }
+            }
+            set
+            {
+                using (var regKey = Registry.CurrentUser.CreateSubKey(MyRegisteredHomeOrNot))
+                {
+                    if (value)
+                        regKey.SetValue("EnableAutoCorrectPath", 1, RegistryValueKind.DWord);
+                    else
+                        regKey.SetValue("EnableAutoCorrectPath", 0, RegistryValueKind.DWord);
                 }
             }
         }
@@ -76,5 +119,32 @@ namespace VData_Explorer
                 }
             }
         }
+
+        public static ExtractionComplete ActionWhenComplete
+        {
+            get
+            {
+                using (var regKey = Registry.CurrentUser.OpenSubKey(MyRegisteredHomeOrNot))
+                {
+                    if (regKey == null)
+                        return ExtractionComplete.Prompt;
+                    return (ExtractionComplete)((int)regKey.GetValue("ActionWhenComplete", 1));
+                }
+            }
+            set
+            {
+                using (var regKey = Registry.CurrentUser.CreateSubKey(MyRegisteredHomeOrNot))
+                {
+                    regKey.SetValue("ActionWhenComplete", (int)value, RegistryValueKind.DWord);
+                }
+            }
+        }
+    }
+
+    public enum ExtractionComplete : int
+    {
+        DoNothing = 1,
+        Prompt,
+        Always
     }
 }

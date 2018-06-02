@@ -74,6 +74,15 @@
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
+            <MenuItem Header="Options" SubmenuOpened="MenuItemOptions_ContextMenuOpening">
+                <MenuItem Header="Auto-correct invalid filepath when extract" x:Name="autoCorrectPathWhenExtract" IsCheckable="True" Checked="MenuItemAutoCorrectPathWhenExtract_Checked" Unchecked="MenuItemAutoCorrectPathWhenExtract_Checked" />
+                <MenuItem Header="Open directory when extract complete">
+                    <MenuItem Header="Do nothing" x:Name="openDirNone" Click="MenuItemOpenDirNone_Click" IsCheckable="True" />
+                    <MenuItem Header="Prompt" x:Name="openDirPrompt" Click="MenuItemOpenDirPrompt_Click" IsCheckable="True" />
+                    <MenuItem Header="Always" x:Name="openDirAlways" Click="MenuItemOpenDirAlways_Click" IsCheckable="True" />
+                </MenuItem>
+                <MenuItem Header="Clear password history" Click="MenuItemClearPasswordHistory_Click" />
+            </MenuItem>
             <MenuItem Header="File" IsEnabled="{Binding ElementName=tabList,Path=IsSelected,Mode=OneWay}">
                 <MenuItem Command="{StaticResource CmdExtractSelected}">
                     <MenuItem.Icon>

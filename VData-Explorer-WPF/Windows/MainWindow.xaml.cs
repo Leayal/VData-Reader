@@ -29,6 +29,9 @@ namespace VData_Explorer.Windows
     /// </summary>
     public partial class MainWindow : MetroWindow
     {
+        const char replacedinvalidcharacterpath = '-';
+        private static readonly char[] pathsplitters = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+        private static readonly char[] invalidpathchars = Path.GetInvalidFileNameChars();
         const string DirectoryRoot = "<Root>";
         const string ThisWindowTitle = "VData Explorer";
         private VFile archive;
@@ -501,20 +504,28 @@ namespace VData_Explorer.Windows
                     ext = ext.Remove(0, 1);
                 sfd.Title = "Select the destination to save the file";
                 sfd.Filter = ext.ToUpper() + " File|*." + ext;
-                sfd.FileName = item.Filename;
+                if (TryNormallizePath(item.Filename, out var normalizedpath))
+                    sfd.FileName = normalizedpath;
+                else
+                    sfd.FileName = item.Filename;
                 sfd.DefaultExt = ext;
                 sfd.OverwritePrompt = true;
+                string lastpath = Settings.LastFileExtractLocation;
+                if (!string.IsNullOrWhiteSpace(lastpath))
+                    sfd.InitialDirectory = lastpath;
                 sfd.CheckPathExists = true;
                 sfd.CheckFileExists = false;
                 if (sfd.ShowDialog(this) == true)
                 {
                     string parentPath = Microsoft.VisualBasic.FileIO.FileSystem.GetParentPath(sfd.FileName);
-                    Settings.LastExtractLocation = parentPath;
+                    Settings.LastFileExtractLocation = parentPath;
                     this.isWorking = this.CreateIsWorking();
                     this.mainProgressbar.IsIndeterminate = true;
                     this.mainProgressbar.Value = 0;
                     this.tabExtracting.IsSelected = true;
                     this.mainProgressText.Text = "Preparing";
+                    ExtractionComplete actionWhenCompleted = Settings.ActionWhenComplete;
+                    bool autocorrectpath = Settings.EnableAutoCorrectPath;
                     try
                     {
                         await Task.Run(() =>
@@ -557,6 +568,20 @@ namespace VData_Explorer.Windows
                                 }
                             }
                         });
+
+                        switch (actionWhenCompleted)
+                        {
+                            case ExtractionComplete.Prompt:
+                                if (await this.ShowMessageAsync("Question", "Show file in the destination directory?", MessageDialogStyle.AffirmativeAndNegative, new MetroDialogSettings() { AffirmativeButtonText = "Open folder", NegativeButtonText = "Cancel" }) == MessageDialogResult.Affirmative)
+                                {
+                                    Interop.Helpers.ShowFolder(sfd.FileName);
+                                }
+                                break;
+                            case ExtractionComplete.Always:
+                                Interop.Helpers.ShowFolder(sfd.FileName);
+                                break;
+                        }
+
                         this.isWorking = null;
                     }
                     catch (Exception ex)
@@ -590,8 +615,11 @@ namespace VData_Explorer.Windows
                         this.mainProgressbar.Value = 0;
                         this.tabExtracting.IsSelected = true;
                         this.mainProgressText.Text = "Preparing";
+                        ExtractionComplete actionWhenCompleted = Settings.ActionWhenComplete;
+                        bool autocorrectpath = Settings.EnableAutoCorrectPath;
                         try
                         {
+                            MetroDialogSettings inputdialogsettings = new MetroDialogSettings() { AffirmativeButtonText = "OK", NegativeButtonText = "Skip file" };
                             string impossibru = this.viewer.CurrentDirectory.Fullname;
                             var targeted = this.filelist.SelectedItems;
                             // Impossible to equals to DirectoryRoot
@@ -621,18 +649,105 @@ namespace VData_Explorer.Windows
                                     this.mainProgressbar.Maximum = val;
                                     this.mainProgressbar.IsIndeterminate = false;
                                 }), DispatcherPriority.Normal, count);
-                                string filepath;
+                                string filepath, filepath2, entrypath;
                                 int byteread;
                                 byte[] buffer = new byte[4096];
+                                bool isfullpath;
                                 foreach (ZipEntry entry in entries)
                                 {
                                     if (this.isWorking.IsCancellationRequested)
                                         break;
                                     current++;
+
                                     if (impossibru.Length == 0)
-                                        filepath = Path.Combine(dialog.FileName, entry.Key);
+                                        entrypath = entry.Key;
                                     else
-                                        filepath = Path.Combine(dialog.FileName, entry.Key.Remove(0, impossibru.Length + 1));
+                                        entrypath = entry.Key.Remove(0, impossibru.Length + 1);
+                                    filepath = Path.Combine(dialog.FileName, entrypath);
+                                    if (entrypath.IndexOf(Path.DirectorySeparatorChar) == -1 && entrypath.IndexOf(Path.AltDirectorySeparatorChar) == -1)
+                                    {
+                                        if (TryNormallizePath(entrypath, out filepath2))
+                                        {
+                                            if (autocorrectpath)
+                                            {
+                                                filepath = Path.Combine(dialog.FileName, filepath2);
+                                            }
+                                            else
+                                            {
+                                                inputdialogsettings.DefaultText = filepath2;
+                                                filepath2 = this.mainProgressbar.Dispatcher.Invoke(async () =>
+                                                {
+                                                    string asdasdasd = await this.ShowInputAsync("Invalid file path", $"\"{entrypath}\" is not a valid path.\nPlease input the new filename.", inputdialogsettings);
+                                                    return asdasdasd;
+                                                }).Result;
+                                                if (string.IsNullOrWhiteSpace(filepath2))
+                                                    continue;
+                                                else
+                                                    filepath = Path.Combine(dialog.FileName, filepath2);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        string[] asdasd = entrypath.Split(pathsplitters, StringSplitOptions.RemoveEmptyEntries);
+                                        if (TryNormallizePath(asdasd, out filepath2, out isfullpath))
+                                        {
+                                            if (isfullpath)
+                                            {
+                                                if (autocorrectpath)
+                                                {
+                                                    filepath = Path.Combine(dialog.FileName, filepath2);
+                                                }
+                                                else
+                                                {
+                                                    inputdialogsettings.DefaultText = filepath2;
+                                                    filepath2 = this.mainProgressbar.Dispatcher.Invoke(async () =>
+                                                    {
+                                                        string asdasdasd = await this.ShowInputAsync("Invalid file path", $"\"{entrypath}\" is not a valid path.\nPlease input the new file path.", inputdialogsettings);
+                                                        return asdasdasd;
+                                                    }).Result;
+                                                    if (string.IsNullOrWhiteSpace(filepath2))
+                                                        continue;
+                                                    else
+                                                        filepath = Path.Combine(dialog.FileName, filepath2);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                string[] evennewitem = new string[asdasd.Length + 1];
+                                                int countexceptlastindex = asdasd.Length - 1;
+                                                for (int i = 0; i < countexceptlastindex; i++)
+                                                {
+                                                    evennewitem[1 + i] = asdasd[i];
+                                                }
+                                                if (autocorrectpath)
+                                                {
+                                                    evennewitem[0] = dialog.FileName;
+                                                    evennewitem[evennewitem.Length - 1] = filepath2;
+                                                    filepath = Path.Combine(evennewitem);
+                                                }
+                                                else
+                                                {
+                                                    inputdialogsettings.DefaultText = filepath2;
+                                                    filepath2 = this.mainProgressbar.Dispatcher.Invoke(async () =>
+                                                    {
+                                                        string asdasdasd = await this.ShowInputAsync("Invalid file path", $"\"{entrypath}\" is not a valid path.\nPlease input the new filename.\nFolder: {string.Join(Path.DirectorySeparatorChar.ToString(), evennewitem).Trim(pathsplitters)}", inputdialogsettings);
+                                                        return asdasdasd;
+                                                    }).Result;
+                                                    if (string.IsNullOrWhiteSpace(filepath2))
+                                                        continue;
+                                                    else
+                                                    {
+                                                        evennewitem[0] = dialog.FileName;
+                                                        evennewitem[evennewitem.Length - 1] = filepath2;
+                                                        filepath = Path.Combine(evennewitem);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    
                                     Microsoft.VisualBasic.FileIO.FileSystem.CreateDirectory(Microsoft.VisualBasic.FileIO.FileSystem.GetParentPath(filepath));
                                     using (Stream entryStream = this.archive.GetEntryStream(entry))
                                     using (FileStream fs = File.Create(filepath))
@@ -663,6 +778,21 @@ namespace VData_Explorer.Windows
                                     }), DispatcherPriority.Normal, $"Extracting: {entry.Key} ({current}/{count})");
                                 }
                             });
+
+                            switch (actionWhenCompleted)
+                            {
+                                case ExtractionComplete.Prompt:
+                                    if (await this.ShowMessageAsync("Question", "Open destination directory?", MessageDialogStyle.AffirmativeAndNegative, new MetroDialogSettings() { AffirmativeButtonText = "Open folder", NegativeButtonText = "Cancel" }) == MessageDialogResult.Affirmative)
+                                    {
+                                        System.Diagnostics.Process.Start(dialog.FileName);
+                                        // destinationFolder
+                                    }
+                                    break;
+                                case ExtractionComplete.Always:
+                                    System.Diagnostics.Process.Start(dialog.FileName);
+                                    break;
+                            }
+
                             this.isWorking = null;
                         }
                         catch (Exception ex)
@@ -709,19 +839,23 @@ namespace VData_Explorer.Windows
             this.mainProgressbar.Value = 0;
             this.tabExtracting.IsSelected = true;
             this.mainProgressText.Text = "Preparing";
+            ExtractionComplete actionWhenCompleted = Settings.ActionWhenComplete;
             try
             {
                 await Task.Run(() =>
                 {
+                    bool autocorrectpath = Settings.EnableAutoCorrectPath;
                     int count = this.archive.EntryCount, current = 0;
                     this.mainProgressbar.Dispatcher.Invoke(new ProgressBarValue((val) =>
                     {
                         this.mainProgressbar.Maximum = val;
                         this.mainProgressbar.IsIndeterminate = false;
                     }), DispatcherPriority.Normal, count);
-                    string filepath;
+                    string filepath, filepath2;
                     byte[] buffer = new byte[4096];
+                    MetroDialogSettings inputdialogsettings = new MetroDialogSettings() { AffirmativeButtonText = "OK", NegativeButtonText = "Skip file" };
                     int byteread;
+                    bool isfullpath;
                     IEnumerable<ZipEntry> walker = this.archive;
                     foreach (ZipEntry entry in walker)
                     {
@@ -731,6 +865,88 @@ namespace VData_Explorer.Windows
                         if (!entry.IsDirectory)
                         {
                             filepath = Path.Combine(destinationFolder, entry.Key);
+                            if (entry.Key.IndexOf(Path.DirectorySeparatorChar) == -1 && entry.Key.IndexOf(Path.AltDirectorySeparatorChar) == -1)
+                            {
+                                if (TryNormallizePath(entry.Key, out filepath2))
+                                {
+                                    if (autocorrectpath)
+                                    {
+                                        filepath = Path.Combine(destinationFolder, filepath2);
+                                    }
+                                    else
+                                    {
+                                        inputdialogsettings.DefaultText = filepath2;
+                                        filepath2 = this.mainProgressbar.Dispatcher.Invoke(async () =>
+                                        {
+                                            string asdasdasd = await this.ShowInputAsync("Invalid file path", $"\"{entry.Key}\" is not a valid path.\nPlease input the new filename.", inputdialogsettings);
+                                            return asdasdasd;
+                                        }).Result;
+                                        if (string.IsNullOrWhiteSpace(filepath2))
+                                            continue;
+                                        else
+                                            filepath = Path.Combine(destinationFolder, filepath2);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                string[] asdasd = entry.Key.Split(pathsplitters, StringSplitOptions.RemoveEmptyEntries);
+                                if (TryNormallizePath(asdasd, out filepath2, out isfullpath))
+                                {
+                                    if (isfullpath)
+                                    {
+                                        if (autocorrectpath)
+                                        {
+                                            filepath = Path.Combine(destinationFolder, filepath2);
+                                        }
+                                        else
+                                        {
+                                            inputdialogsettings.DefaultText = filepath2;
+                                            filepath2 = this.mainProgressbar.Dispatcher.Invoke(async () =>
+                                            {
+                                                string asdasdasd = await this.ShowInputAsync("Invalid file path", $"\"{entry.Key}\" is not a valid path.\nPlease input the new file path.", inputdialogsettings);
+                                                return asdasdasd;
+                                            }).Result;
+                                            if (string.IsNullOrWhiteSpace(filepath2))
+                                                continue;
+                                            else
+                                                filepath = Path.Combine(destinationFolder, filepath2);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        string[] evennewitem = new string[asdasd.Length + 1];
+                                        int countexceptlastindex = asdasd.Length - 1;
+                                        for (int i = 0; i < countexceptlastindex; i++)
+                                        {
+                                            evennewitem[1 + i] = asdasd[i];
+                                        }
+                                        if (autocorrectpath)
+                                        {
+                                            evennewitem[0] = destinationFolder;
+                                            evennewitem[evennewitem.Length - 1] = filepath2;
+                                            filepath = Path.Combine(evennewitem);
+                                        }
+                                        else
+                                        {
+                                            inputdialogsettings.DefaultText = filepath2;
+                                            filepath2 = this.mainProgressbar.Dispatcher.Invoke(async () =>
+                                            {
+                                                string asdasdasd = await this.ShowInputAsync("Invalid file path", $"\"{entry.Key}\" is not a valid path.\nPlease input the new filename.\nFolder: {string.Join(Path.DirectorySeparatorChar.ToString(), evennewitem).Trim(pathsplitters)}", inputdialogsettings);
+                                                return asdasdasd;
+                                            }).Result;
+                                            if (string.IsNullOrWhiteSpace(filepath2))
+                                                continue;
+                                            else
+                                            {
+                                                evennewitem[0] = destinationFolder;
+                                                evennewitem[evennewitem.Length - 1] = filepath2;
+                                                filepath = Path.Combine(evennewitem);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             Microsoft.VisualBasic.FileIO.FileSystem.CreateDirectory(Microsoft.VisualBasic.FileIO.FileSystem.GetParentPath(filepath));
                             using (Stream entryStream = this.archive.GetEntryStream(entry))
                             using (FileStream fs = File.Create(filepath))
@@ -762,6 +978,19 @@ namespace VData_Explorer.Windows
                         }
                     }
                 });
+                switch (actionWhenCompleted)
+                {
+                    case ExtractionComplete.Prompt:
+                        if (await this.ShowMessageAsync("Question", "Open destination directory?", MessageDialogStyle.AffirmativeAndNegative, new MetroDialogSettings() { AffirmativeButtonText = "Open folder", NegativeButtonText = "Cancel" }) == MessageDialogResult.Affirmative)
+                        {
+                            System.Diagnostics.Process.Start(destinationFolder);
+                            // destinationFolder
+                        }
+                        break;
+                    case ExtractionComplete.Always:
+                        System.Diagnostics.Process.Start(destinationFolder);
+                        break;
+                }
                 this.isWorking = null;
             }
             catch (Exception ex)
@@ -771,6 +1000,64 @@ namespace VData_Explorer.Windows
             }
             if (this.archive != null)
                 this.tabList.IsSelected = true;
+        }
+
+        private static bool TryNormallizePath(string stringIn, out string output)
+        {
+            bool result = false;
+            System.Text.StringBuilder sb = new System.Text.StringBuilder(stringIn.Length);
+            foreach (char c in stringIn)
+            {
+                if (Array.IndexOf(invalidpathchars, c) != -1)
+                {
+                    sb.Append(replacedinvalidcharacterpath);
+                    result = true;
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            if (result)
+                output = sb.ToString();
+            else
+                output = null;
+            return result;
+        }
+
+        private static bool TryNormallizePath(string[] stringIn, out string output, out bool isfullpath)
+        {
+            bool result = false;
+            isfullpath = false;
+            string mystring;
+            string[] result2 = new string[stringIn.Length];
+            int lastindex = stringIn.Length - 1;
+            for (int i = 0; i < stringIn.Length;i++)
+            {
+                if (TryNormallizePath(stringIn[i], out mystring))
+                {
+                    result2[i] = mystring;
+                    result = true;
+                    if (i < lastindex)
+                    {
+                        isfullpath = true;
+                    }
+                }
+                else
+                {
+                    result2[i] = stringIn[i];
+                }
+            }
+            if (result)
+            {
+                if (isfullpath)
+                    output = string.Join(Path.DirectorySeparatorChar.ToString(), result2);
+                else
+                    output = result2[result2.Length - 1];
+            }
+            else
+                output = null;
+            return result;
         }
 
         private void ListBoxItem_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -783,6 +1070,57 @@ namespace VData_Explorer.Windows
                     dir.DoubleClicked();
                 }
             }
+        }
+
+        private async void MenuItemClearPasswordHistory_Click(object sender, RoutedEventArgs e)
+        {
+            if (await this.ShowMessageAsync("Confirmation", "Are you sure you want to clear the password history?", MessageDialogStyle.AffirmativeAndNegative, new MetroDialogSettings() { AffirmativeButtonText = "Yes", NegativeButtonText = "No" }) == MessageDialogResult.Affirmative)
+            {
+                Settings.UsedPassword = null;
+            }
+        }
+
+        private void MenuItemOpenDirNone_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.ActionWhenComplete = ExtractionComplete.DoNothing;
+        }
+
+        private void MenuItemOpenDirPrompt_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.ActionWhenComplete = ExtractionComplete.Prompt;
+        }
+
+        private void MenuItemOpenDirAlways_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.ActionWhenComplete = ExtractionComplete.Always;
+        }
+
+        private void MenuItemAutoCorrectPathWhenExtract_Checked(object sender, RoutedEventArgs e)
+        {
+            Settings.EnableAutoCorrectPath = this.autoCorrectPathWhenExtract.IsChecked;
+        }
+
+        private void MenuItemOptions_ContextMenuOpening(object sender, RoutedEventArgs e)
+        {
+            switch (Settings.ActionWhenComplete)
+            {
+                case ExtractionComplete.Always:
+                    this.openDirAlways.IsChecked = true;
+                    this.openDirNone.IsChecked = false;
+                    this.openDirPrompt.IsChecked = false;
+                    break;
+                case ExtractionComplete.DoNothing:
+                    this.openDirAlways.IsChecked = false;
+                    this.openDirNone.IsChecked = true;
+                    this.openDirPrompt.IsChecked = false;
+                    break;
+                default:
+                    this.openDirAlways.IsChecked = false;
+                    this.openDirNone.IsChecked = false;
+                    this.openDirPrompt.IsChecked = true;
+                    break;
+            }
+            this.autoCorrectPathWhenExtract.IsChecked = Settings.EnableAutoCorrectPath;
         }
     }
 }
